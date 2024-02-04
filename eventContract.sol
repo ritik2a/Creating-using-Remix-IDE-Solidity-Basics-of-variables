@@ -1,29 +1,34 @@
-const hre = require("hardhat");
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.7;
 
-async function main() { 
-  const EventTest = await hre.ethers.getContractFactory("Task");
-  const eventTest = await EventTest.deploy();
+contract Task {
+    uint public age;
+    address public userAddress;
 
-  await eventTest.deployed();
+    modifier userExist { 
+        require(userAddress == address(0), "User already exists");
+        _;
+    }
 
-  eventTest.on("UserCreated", (userAddress, age) => {
-    console.log("user created");
-  })
-
-  eventTest.on("UserUpdated", (userAddress, newAge) => {
-    console.log("user updated");
-  })
-
-  eventTest.on("UserDeleted", (userAddress) => {
-    console.log("user deleted");
-  })
-
-  console.log(
-    `Contract deployed to ${eventTest.address}`
-  );
+    modifier userDoesNotExist { 
+        require(userAddress != address(0), "User doesn't exist");
+        _;
+    }
+    event UserCreated(address indexed userAddress, uint age);
+    event UserUpdated(address indexed userAddress, uint newAge);
+    event UserDeleted(address indexed userAddress);
+    function createUser(uint _age) public userExist {
+        age = _age;
+        userAddress = msg.sender;
+        emit UserCreated(msg.sender,  _age);
+    }
+    function updateUser(uint _newAge) public userDoesNotExist {
+        age = _newAge;
+        emit UserUpdated(msg.sender, _newAge);
+    }
+    function deleteUser() public userDoesNotExist {
+        age = 0;
+        userAddress = address(0);
+        emit UserDeleted(msg.sender);
+    }
 }
-
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
